@@ -27,6 +27,7 @@ import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.hyperdevs.poeditor.gradle.ktx.registerNewTask
 import com.hyperdevs.poeditor.gradle.network.api.OrderType
 import com.hyperdevs.poeditor.gradle.tasks.ImportPoEditorStringsTask
+import com.hyperdevs.poeditor.gradle.tasks.UploadPoEditorStringsTask
 import com.hyperdevs.poeditor.gradle.utils.*
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
@@ -101,9 +102,16 @@ class PoEditorPlugin : Plugin<Project> {
         // Add tasks for every flavor or build type
         androidComponentsExtension.beforeVariants {
             addMainPoEditorTask(project, mainExtension)
+            addUploadPoEditorTask(project, mainExtension)
             val configs = getConfigs(it.productFlavors.map { it.second }, it.buildType)
 
             generatePoEditorTasks(configs,
+                project,
+                configsExtensionContainer,
+                mainExtension,
+                configPoEditorTaskProvidersMap)
+
+            generateUploadPoEditorTasks(configs,
                 project,
                 configsExtensionContainer,
                 mainExtension,
@@ -139,10 +147,17 @@ class PoEditorPlugin : Plugin<Project> {
         androidComponentsExtension.beforeVariants {
             // Add main extension since we have the main extension evaluated here
             addMainPoEditorTask(project, mainExtension)
+            addUploadPoEditorTask(project, mainExtension)
 
             val configs = getConfigs(it.productFlavors.map { it.second }, it.buildType)
 
             generatePoEditorTasks(configs,
+                project,
+                configsExtensionContainer,
+                mainExtension,
+                configPoEditorTaskProvidersMap)
+
+            generateUploadPoEditorTasks(configs,
                 project,
                 configsExtensionContainer,
                 mainExtension,
@@ -180,6 +195,30 @@ class PoEditorPlugin : Plugin<Project> {
                 logger.debug("$TAG: PoEditor extension is enabled for configuration 'main'")
 
                 project.registerNewTask<ImportPoEditorStringsTask>(
+                    mainPoEditorTaskName,
+                    mainPoEditorTaskDescription,
+                    PLUGIN_GROUP,
+                    arrayOf(mainPoEditorExtension))
+            }
+        }
+    }
+    private fun addUploadPoEditorTask(project: Project, mainPoEditorExtension: PoEditorPluginExtension) {
+        val mainPoEditorTaskName = getUploadPoEditorTaskName()
+        val mainPoEditorTaskDescription = getUploadPoEditorDescription()
+
+        project.tasks.findByName(mainPoEditorTaskName) ?: run {
+            // Create the main PoEditor task and add it to the project if enabled. Else, just create an empty task.
+            if (!mainPoEditorExtension.enabled.get()) {
+                logger.debug("$TAG: PoEditor extension is disabled for configuration 'main'")
+
+                project.registerNewTask(
+                    mainPoEditorTaskName,
+                    mainPoEditorTaskDescription,
+                    PLUGIN_GROUP)
+            } else {
+                logger.debug("$TAG: PoEditor extension is enabled for configuration 'main'")
+
+                project.registerNewTask<UploadPoEditorStringsTask>(
                     mainPoEditorTaskName,
                     mainPoEditorTaskDescription,
                     PLUGIN_GROUP,
@@ -234,6 +273,49 @@ class PoEditorPlugin : Plugin<Project> {
         }
     }
 
+    @Suppress("NestedBlockDepth")
+    private fun generateUploadPoEditorTasks(configs: Set<String>,
+                                      project: Project,
+                                      configsExtensionContainer: NamedDomainObjectContainer<PoEditorPluginExtension>,
+                                      mainExtension: PoEditorPluginExtension,
+                                      configPoEditorTaskProvidersMap: MutableMap<ConfigName, TaskProvider<*>>) {
+        configs.forEach { configName ->
+            val configTaskName = getUploadPoEditorTaskName(configName)
+
+            // Only create the task if no other task is registered with the same name (would mean it's already
+            // created.
+            project.tasks.findByName(configTaskName) ?: run {
+                val rawConfigExtension = configsExtensionContainer.findByName(configName)?.also {
+                    // Don't forget to add the default resources path for the configuration
+                    val configResDir = getResourceDirectory(project, configName)
+                    it.defaultResPath.convention(configResDir.asFile.absolutePath)
+                }
+
+                if (rawConfigExtension != null) {
+                    logger.debug("$TAG: Extension found in Gradle script for name '$configName', building task...")
+
+                    val mergedConfigExtension = buildExtensionForConfig(project, rawConfigExtension, mainExtension)
+
+                    if (!mergedConfigExtension.enabled.get()) {
+                        logger.debug("$TAG: PoEditor extension is disabled for configuration '$configName'")
+                    } else {
+                        logger.debug("$TAG: PoEditor extension is enabled for configuration '$configName'")
+
+                        val newConfigPoEditorTask = project.registerNewTask<UploadPoEditorStringsTask>(
+                            configTaskName,
+                            getPoEditorDescriptionForConfig(configName),
+                            PLUGIN_GROUP,
+                            arrayOf(mergedConfigExtension))
+
+                        configPoEditorTaskProvidersMap.put(configName, newConfigPoEditorTask)
+                    }
+                } else {
+                    logger.debug("$TAG: No extension found in Gradle script for name '$configName'")
+                }
+            }
+        }
+    }
+
     private fun verifyAndLinkTasks(configsExtensionContainer: NamedDomainObjectContainer<PoEditorPluginExtension>,
                                    allPossibleConfigNames: Set<String>,
                                    configPoEditorTaskProvidersMap: MutableMap<ConfigName, TaskProvider<*>>,
@@ -255,12 +337,17 @@ class PoEditorPlugin : Plugin<Project> {
     }
 
     private fun getPoEditorTaskName(configName: ConfigName = "") = "import${configName.capitalize()}PoEditorStrings"
+    private fun getUploadPoEditorTaskName(configName: ConfigName = "") = "upload${configName.capitalize()}PoEditorStrings"
 
     private fun getResourceDirectory(project: Project, configName: ConfigName) =
         project.layout.projectDirectory.dir("src/$configName/res")
 
     private fun getMainPoEditorDescription(): String = """
         Imports all PoEditor strings for all flavors and build types configurations.
+    """.trimIndent()
+
+    private fun getUploadPoEditorDescription(): String = """
+        Uploads all strings for all flavors and build types configurations.
     """.trimIndent()
 
     private fun getPoEditorDescriptionForConfig(configName: ConfigName): String = """

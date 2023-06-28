@@ -18,10 +18,14 @@
 
 package com.hyperdevs.poeditor.gradle.network.api
 
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 
 /**
  * API declaration of PoEditor endpoints used in the app.
@@ -51,4 +55,21 @@ interface PoEditorApi {
                           @Field("order") order: String? = null,
                           @Field("tags") tags: List<String>? = null,
                           @Field("options") options: String? = null): Call<PoEditorResponse<ExportResult>>
+
+    /**
+     * Updates language translations
+     */
+    @Suppress("LongParameterList")
+    @Multipart
+    @JvmSuppressWildcards
+    @POST("projects/upload")
+    fun uploadProjectLanguage(@Part("api_token") apiToken: RequestBody,
+                              @Part("id") id: RequestBody,
+                              @Part("updating") updating: RequestBody,
+                              @Part("language") language: RequestBody,
+                              @Part file: MultipartBody.Part,
+                              @Part("overwrite") overwrite: RequestBody,
+                              @Part("sync_terms") syncTerms: RequestBody,
+                              @Part("fuzzy_trigger") fuzzyTrigger: RequestBody,
+                              @Part("tags") tags: List<RequestBody>? = null): Call<PoEditorResponse<ProjectUploadResult>>
 }

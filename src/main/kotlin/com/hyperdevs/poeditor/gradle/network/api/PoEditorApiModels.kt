@@ -150,3 +150,49 @@ data class Options(val unquoted: Int) {
         require(unquoted in 0..1) { "unquoted value must be 0 or 1" }
     }
 }
+
+/**
+ * Project upload updating type.
+ */
+enum class UpdatingType {
+    TERMS,
+    TERMS_TRANSLATIONS,
+    TRANSLATIONS;
+
+    companion object {
+        /** Returns the enum value associated to a string value. */
+        fun from(value: String) =
+            try {
+                UpdatingType.valueOf(value.toUpperCase())
+            } catch (e: Exception) {
+                val message = "Value \"$value\" is not a valid ${this::class.java.declaringClass.simpleName}; " +
+                              "allowed values are: ${UpdatingType.values().joinToString(", ") { "\"${it.name.toLowerCase()}\"" }}"
+                throw IllegalArgumentException(message)
+            }
+    }
+}
+
+/**
+ * Project upload terms response
+ */
+data class ProjectUploadTerms(
+    val parsed: Int,
+    val added: Int,
+    val deleted: Int
+)
+
+/**
+ * Project upload translations response
+ */
+data class ProjectUploadTranslations(
+    val parsed: Int,
+    val added: Int,
+    val updated: Int
+)
+/**
+ * Project upload result
+ */
+data class ProjectUploadResult(
+    val terms: ProjectUploadTerms?,
+    val translations: ProjectUploadTranslations
+)

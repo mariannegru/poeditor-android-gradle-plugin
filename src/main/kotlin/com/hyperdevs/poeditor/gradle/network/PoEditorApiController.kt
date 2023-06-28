@@ -22,7 +22,12 @@ import com.hyperdevs.poeditor.gradle.network.api.*
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
+import java.io.File
 
 /**
  * Basic interface used to implement API calls to the PoEditor service.
@@ -45,6 +50,19 @@ interface PoEditorApiController {
                               order: OrderType,
                               tags: List<String>?,
                               unquoted: Boolean): String
+
+    /**
+     * Updates the default language translations from project to backend.
+     */
+    @Suppress("LongParameterList")
+    fun uploadProjectLanguage(projectId: Int,
+                              code: String,
+                              updating: UpdatingType,
+                              file: File,
+                              overwrite: Boolean,
+                              syncTerms: Boolean,
+                              fuzzyTrigger: Boolean,
+                              tags: List<String>?): String
 }
 
 /**
@@ -90,6 +108,29 @@ class PoEditorApiControllerImpl(private val apiToken: String,
         ).execute()
 
         return response.onSuccessful { it.url }
+    }
+
+    override fun uploadProjectLanguage(projectId: Int,
+                                       code: String,
+                                       updating: UpdatingType,
+                                       file: File,
+                                       overwrite: Boolean,
+                                       syncTerms: Boolean,
+                                       fuzzyTrigger: Boolean,
+                                       tags: List<String>?): String {
+        val response = poEditorApi.uploadProjectLanguage(
+            apiToken = apiToken.toRequestBody(),
+            id = projectId.toString().toRequestBody(),
+            language = code.toRequestBody(),
+            updating = updating.toString().toLowerCase().toRequestBody(),
+            overwrite = (if(overwrite) 1 else 0).toString().toRequestBody(),
+            syncTerms = (if(syncTerms) 1 else 0).toString().toRequestBody(),
+            fuzzyTrigger = (if(fuzzyTrigger) 1 else 0).toString().toRequestBody(),
+            file = MultipartBody.Part.createFormData("file", "strings.xml", file.asRequestBody("text/xml".toMediaTypeOrNull())),
+            tags = tags?.map { it.toRequestBody() }
+        ).execute()
+
+        return response.onSuccessful { it.terms?.toString() ?: "" }
     }
 
     private inline fun <T, U : PoEditorResponse<T>, V> Response<U>.onSuccessful(func: (T) -> V): V {
