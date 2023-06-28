@@ -130,7 +130,7 @@ class PoEditorApiControllerImpl(private val apiToken: String,
             tags = tags?.map { it.toRequestBody() }
         ).execute()
 
-        return response.onSuccessful { it.terms?.toString() ?: "" }
+        return response.onSuccessful { it.toString() }
     }
 
     private inline fun <T, U : PoEditorResponse<T>, V> Response<U>.onSuccessful(func: (T) -> V): V {
