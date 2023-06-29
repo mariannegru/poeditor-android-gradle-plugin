@@ -18,9 +18,11 @@
 
 package com.hyperdevs.poeditor.gradle
 
+import com.hyperdevs.poeditor.gradle.ktx.asList
 import com.hyperdevs.poeditor.gradle.network.PoEditorApiControllerImpl
 import com.hyperdevs.poeditor.gradle.network.api.PoEditorApi
 import com.hyperdevs.poeditor.gradle.network.api.ProjectLanguage
+import com.hyperdevs.poeditor.gradle.network.api.Term
 import com.hyperdevs.poeditor.gradle.network.api.UpdatingType
 import com.hyperdevs.poeditor.gradle.utils.createValuesModifierFromLangCode
 import com.hyperdevs.poeditor.gradle.utils.logger
@@ -33,8 +35,10 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.io.File
+import java.io.FileInputStream
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.xml.parsers.DocumentBuilderFactory
 
 /**
  * Main class that uploads android xml string files to PoEditor.
@@ -104,6 +108,8 @@ object PoEditorStringsUploader {
 
             val mainValuesFile = File(baseValuesDir, "$resFileName.xml")
             if (mainValuesFile.exists()) {
+                syncTerms(mainValuesFile, projectId, poEditorApiController)
+
                 // Retrieve translation file URL for the given language and for the "android_strings" type,
                 // acknowledging passed tags if present
                 logger.lifecycle("Uploading strings file for language code: $languageCode")
@@ -113,7 +119,7 @@ object PoEditorStringsUploader {
                     updating = UpdatingType.TERMS_TRANSLATIONS,
                     file = mainValuesFile,
                     overwrite = true,
-                    syncTerms = true,
+                    syncTerms = false,
                     fuzzyTrigger = true,
                     tags = tags
                 )
@@ -124,6 +130,46 @@ object PoEditorStringsUploader {
             logger.error("An error happened when retrieving strings from project. " +
                          "Please review the plug-in's input parameters and try again")
             throw e
+        }
+    }
+
+    private fun syncTerms(mainValuesFile: File, projectId: Int, poEditorApiController: PoEditorApiControllerImpl) {
+        val document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+            .parse(FileInputStream(mainValuesFile))
+
+        val localTerms = document.documentElement.getElementsByTagName("string").asList().map {
+            Term(
+                term = it.attributes.getNamedItem("name").nodeValue,
+                tags = tags
+            )
+        }.associateBy { it.term }
+
+        val remoteTerms = poEditorApiController.getTerms(projectId).associateBy { it.term }
+
+        val deletedTerms = (remoteTerms.keys - localTerms.keys)
+        var updatedTerms = remoteTerms.map {
+            if (deletedTerms.contains(it.key)) {
+                it.value.copy(tags = ((it.value.tags ?: emptyList()) - tags.toSet()).distinct())
+            } else {
+                it.value.copy(tags = ((it.value.tags ?: emptyList()) + tags.toSet()).distinct())
+            }
+        }
+
+        val updateResult = poEditorApiController.upsertTerms(
+            projectId = projectId,
+            fuzzyTrigger = true,
+            terms = updatedTerms.filter { !it.tags.isNullOrEmpty() }
+        )
+        logger.lifecycle("Updated terms: $updateResult")
+
+        updatedTerms.filter { it.tags.isNullOrEmpty() }.run {
+            if (isNotEmpty()) {
+                val deleteResult = poEditorApiController.deleteTerms(
+                    projectId = projectId,
+                    terms = this
+                )
+                logger.lifecycle("Deleted terms: $deleteResult")
+            }
         }
     }
 

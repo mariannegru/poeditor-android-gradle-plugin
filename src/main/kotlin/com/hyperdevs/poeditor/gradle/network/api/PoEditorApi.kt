@@ -72,4 +72,37 @@ interface PoEditorApi {
                               @Part("sync_terms") syncTerms: RequestBody,
                               @Part("fuzzy_trigger") fuzzyTrigger: RequestBody,
                               @Part("tags") tags: List<RequestBody>? = null): Call<PoEditorResponse<ProjectUploadResult>>
+
+    /**
+     * Get terms list
+     */
+    @Suppress("LongParameterList")
+    @FormUrlEncoded
+    @JvmSuppressWildcards
+    @POST("terms/list")
+    fun getTerms(@Field("api_token") apiToken: String,
+                 @Field("id") id: Int): Call<PoEditorResponse<TermsListResult>>
+
+    /**
+     * Upsert terms list
+     */
+    @Suppress("LongParameterList")
+    @FormUrlEncoded
+    @JvmSuppressWildcards
+    @POST("terms/update")
+    fun upsertTerms(@Field("api_token") apiToken: String,
+                 @Field("id") id: Int,
+                 @Field("data") data: String,
+                 @Field("fuzzy_trigger") fuzzyTrigger: Int): Call<PoEditorResponse<TermsResult>>
+
+    /**
+     * Delete terms list
+     */
+    @Suppress("LongParameterList")
+    @FormUrlEncoded
+    @JvmSuppressWildcards
+    @POST("terms/delete")
+    fun deleteTerms(@Field("api_token") apiToken: String,
+                 @Field("id") id: Int,
+                 @Field("data") data: String): Call<PoEditorResponse<TermsResult>>
 }

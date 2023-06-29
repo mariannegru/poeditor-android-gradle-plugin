@@ -196,3 +196,34 @@ data class ProjectUploadResult(
     val terms: ProjectUploadTerms?,
     val translations: ProjectUploadTranslations
 )
+
+/**
+ * Term object
+ */
+data class Term(
+    val term: String,
+    val tags: List<String>? = null
+)
+
+/**
+ * Terms list result
+ */
+data class TermsListResult(
+    val terms: List<Term>?
+)
+
+/**
+ * Terms CRUD operation result
+ */
+data class TermsResultData(
+    val parsed: Int?,
+    val updated: Int?,
+    val added: Int?,
+    val deleted: Int?
+)
+/**
+ * Terms CRUD operation result
+ */
+data class TermsResult(
+    val terms: TermsResultData
+)

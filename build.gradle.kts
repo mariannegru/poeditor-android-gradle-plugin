@@ -52,6 +52,7 @@ dependencies {
 
     implementation(libs.kotlin.stdlib)
     implementation(libs.bundles.moshi)
+    implementation(libs.gson)
     implementation(libs.bundles.retrofit)
     implementation(libs.bundles.okhttp3)
     implementation(libs.dotenvKotlin)

@@ -18,7 +18,9 @@
 
 package com.hyperdevs.poeditor.gradle.network
 
+import com.google.gson.Gson
 import com.hyperdevs.poeditor.gradle.network.api.*
+import com.hyperdevs.poeditor.gradle.utils.logger
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -63,6 +65,24 @@ interface PoEditorApiController {
                               syncTerms: Boolean,
                               fuzzyTrigger: Boolean,
                               tags: List<String>?): String
+
+    /**
+     * Get a list of terms
+     */
+    @Suppress("LongParameterList")
+    fun getTerms(projectId: Int): List<Term>
+
+    /**
+     * Upsert a list of terms
+     */
+    @Suppress("LongParameterList")
+    fun upsertTerms(projectId: Int, fuzzyTrigger: Boolean, terms: List<Term>): String
+
+    /**
+     * Delete a list of terms
+     */
+    @Suppress("LongParameterList")
+    fun deleteTerms(projectId: Int, terms: List<Term>): String
 }
 
 /**
@@ -131,6 +151,40 @@ class PoEditorApiControllerImpl(private val apiToken: String,
         ).execute()
 
         return response.onSuccessful { it.toString() }
+    }
+
+    override fun getTerms(projectId: Int): List<Term> {
+        val response = poEditorApi.getTerms(
+            apiToken = apiToken,
+            id = projectId
+        ).execute()
+
+        return response.onSuccessful { it.terms ?: emptyList() }
+    }
+
+    override fun upsertTerms(projectId: Int, fuzzyTrigger: Boolean, terms: List<Term>): String {
+        val data = Gson().toJson(terms)
+        logger.lifecycle("Updating: $data")
+        val response = poEditorApi.upsertTerms(
+            apiToken = apiToken,
+            id = projectId,
+            fuzzyTrigger = if (fuzzyTrigger) 1 else 0,
+            data = data
+        ).execute()
+
+        return response.onSuccessful { it.terms.toString() }
+    }
+
+    override fun deleteTerms(projectId: Int, terms: List<Term>): String {
+        val data = Gson().toJson(terms)
+        logger.lifecycle("Deliting: $data")
+        val response = poEditorApi.deleteTerms(
+            apiToken = apiToken,
+            id = projectId,
+            data = data
+        ).execute()
+
+        return response.onSuccessful { it.terms.toString() }
     }
 
     private inline fun <T, U : PoEditorResponse<T>, V> Response<U>.onSuccessful(func: (T) -> V): V {
