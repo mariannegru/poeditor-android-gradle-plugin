@@ -20,7 +20,6 @@ package com.hyperdevs.poeditor.gradle.xml
 
 import com.hyperdevs.poeditor.gradle.ktx.toAndroidXmlString
 import com.hyperdevs.poeditor.gradle.ktx.toStringsXmlDocument
-import com.hyperdevs.poeditor.gradle.ktx.unescapeHtmlTags
 import com.hyperdevs.poeditor.gradle.utils.ALL_REGEX_STRING
 import org.w3c.dom.*
 
@@ -31,7 +30,7 @@ import org.w3c.dom.*
 class XmlPostProcessor {
     companion object {
         private val DEFAULT_ENCODING = Charsets.UTF_8
-        private val VARIABLE_REGEX = Regex("""\{\d?\{(.*?)\}\}""")
+        private val VARIABLE_REGEX = Regex("""\{(\d*)\{(.*?)\}\}""")
 
         private const val TAG_RESOURCES = "resources"
         private const val TAG_STRING = "string"
@@ -39,6 +38,7 @@ class XmlPostProcessor {
         private const val TAG_ITEM = "item"
 
         private const val ATTR_NAME = "name"
+        private const val ATTR_TRANSLATABLE = "translatable"
     }
 
     /**
@@ -50,20 +50,27 @@ class XmlPostProcessor {
      */
     fun postProcessTranslationXml(translationFileXmlString: String,
                                   fileSplitRegexStringList: List<String>,
-                                  unescapeHtmlTags: Boolean): Map<String, Document> =
-        splitTranslationXml(formatTranslationXml(translationFileXmlString, unescapeHtmlTags), fileSplitRegexStringList)
+                                  unescapeHtmlTags: Boolean,
+                                  untranslatableStringsRegex: String?): Map<String, Document> =
+        splitTranslationXml(
+            formatTranslationXml(translationFileXmlString, unescapeHtmlTags, untranslatableStringsRegex),
+            fileSplitRegexStringList
+        )
 
     /**
      * Formats a given translations XML string to conform to Android strings.xml format.
      */
-    fun formatTranslationXml(translationFileXmlString: String, unescapeHtmlTags: Boolean): String {
+    fun formatTranslationXml(translationFileXmlString: String,
+                             unescapeHtmlTags: Boolean,
+                             untranslatableStringsRegex: String?): String {
         // Parse line by line by traversing the original file using DOM
         val translationFileXmlDocument = translationFileXmlString.toStringsXmlDocument()
 
         formatTranslationXmlDocument(
             translationFileXmlDocument,
             translationFileXmlDocument.childNodes,
-            null
+            null,
+            untranslatableStringsRegex?.toRegex()
         )
 
         return translationFileXmlDocument.toAndroidXmlString(unescapeHtmlTags)
@@ -82,9 +89,10 @@ class XmlPostProcessor {
             //  throw an exception
 
             // If the placeholder contains an ordinal, use it: {2{pages_count}} -> %2$s
-            val match = matchResult.groupValues[0]
-            if (Character.isDigit(match[1])) {
-                "%${match[1]}\$s"
+            val fullMatch = matchResult.groupValues[0]
+            val placeholderVaraibleOrder = matchResult.groupValues[1]
+            if (placeholderVaraibleOrder.toIntOrNull() != null) {
+                "%$placeholderVaraibleOrder\$s"
             } else { // If not, use "1" as the ordinal: {{pages_count}} -> %1$s
                 "%1\$s"
             }
@@ -135,26 +143,37 @@ class XmlPostProcessor {
 
     private fun formatTranslationXmlDocument(document: Document,
                                              nodeList: NodeList,
-                                             rootNode: Node? = null) {
+                                             rootNode: Node? = null,
+                                             untranslatableStringsRegex: Regex?) {
         for (i in 0 until nodeList.length) {
             if (nodeList.item(i).nodeType == Node.ELEMENT_NODE) {
                 val nodeElement = nodeList.item(i) as Element
                 when (nodeElement.tagName) {
                     TAG_RESOURCES -> {
                         // Main node, traverse its children
-                        formatTranslationXmlDocument(document, nodeElement.childNodes, nodeElement)
+                        formatTranslationXmlDocument(
+                            document,
+                            nodeElement.childNodes,
+                            nodeElement,
+                            untranslatableStringsRegex
+                        )
                     }
                     TAG_PLURALS -> {
                         // Plurals node, process its children
-                        formatTranslationXmlDocument(document, nodeElement.childNodes, nodeElement)
+                        formatTranslationXmlDocument(
+                            document,
+                            nodeElement.childNodes,
+                            nodeElement,
+                            untranslatableStringsRegex
+                        )
                     }
                     TAG_STRING -> {
                         // String node, apply transformation to the content
-                        processTextAndReplaceNodeContent(document, nodeElement, rootNode)
+                        processTextAndReplaceNodeContent(document, nodeElement, rootNode, untranslatableStringsRegex)
                     }
                     TAG_ITEM -> {
                         // Plurals item node, apply transformation to the content
-                        processTextAndReplaceNodeContent(document, nodeElement, rootNode)
+                        processTextAndReplaceNodeContent(document, nodeElement, rootNode, untranslatableStringsRegex)
                     }
                 }
             }
@@ -163,7 +182,8 @@ class XmlPostProcessor {
 
     private fun processTextAndReplaceNodeContent(document: Document,
                                                  nodeElement: Element,
-                                                 rootNode: Node?) {
+                                                 rootNode: Node?,
+                                                 untranslatableStringsRegex: Regex?) {
         // First check if we have a CDATA node as the child of the element. If we have it, we have to
         // preserve the CDATA node but process the text. Else, we handle the node as a usual text node
         val copiedNodeElement: Element
@@ -182,6 +202,16 @@ class XmlPostProcessor {
             val processedContent = formatTranslationString(content)
             copiedNodeElement = (nodeElement.cloneNode(true) as Element).apply {
                 textContent = processedContent
+            }
+        }
+
+        // Add the translatable = false node if the string name matches the untranslatable pattern
+        untranslatableStringsRegex?.let {
+            val nodeName = copiedNodeElement.getAttribute(ATTR_NAME)
+
+            if (nodeName.matches(untranslatableStringsRegex)) {
+                // Add translatable attribute
+                copiedNodeElement.setAttribute(ATTR_TRANSLATABLE, "false")
             }
         }
 

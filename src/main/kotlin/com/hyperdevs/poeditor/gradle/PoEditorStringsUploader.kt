@@ -18,6 +18,7 @@
 
 package com.hyperdevs.poeditor.gradle
 
+import com.hyperdevs.poeditor.gradle.adapters.PoEditorDateJsonAdapter
 import com.hyperdevs.poeditor.gradle.ktx.asList
 import com.hyperdevs.poeditor.gradle.network.PoEditorApiControllerImpl
 import com.hyperdevs.poeditor.gradle.network.api.PoEditorApi
@@ -27,7 +28,6 @@ import com.hyperdevs.poeditor.gradle.network.api.UpdatingType
 import com.hyperdevs.poeditor.gradle.utils.createValuesModifierFromLangCode
 import com.hyperdevs.poeditor.gradle.utils.logger
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PoEditorDateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -36,7 +36,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.io.File
 import java.io.FileInputStream
-import java.util.*
+import java.util.Date
 import java.util.concurrent.TimeUnit
 import javax.xml.parsers.DocumentBuilderFactory
 

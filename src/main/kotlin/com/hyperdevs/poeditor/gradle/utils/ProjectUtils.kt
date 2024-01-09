@@ -1,7 +1,5 @@
 /*
- * Copyright 2021 HyperDevs
- *
- * Copyright 2020 BQ
+ * Copyright 2024 HyperDevs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,4 +14,14 @@
  * limitations under the License.
  */
 
-rootProject.name = "poeditor-android-gradle-plugin"
+package com.hyperdevs.poeditor.gradle.utils
+
+import com.hyperdevs.poeditor.gradle.ConfigName
+import org.gradle.api.Project
+import java.io.File
+
+/**
+ * Gets the resource directory for a given config name.
+ */
+fun getResourceDirectory(project: Project, configName: ConfigName) =
+    File(File(File(project.layout.projectDirectory.asFile, "src"), configName), "res")

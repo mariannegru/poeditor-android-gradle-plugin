@@ -34,6 +34,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - No security issues fixed!
 
+## [4.2.0] - 2023-12-21
+### Added
+- Add new `untranslatableStringsRegex` to define a regex to mark matching PoEditor string keys as untranslatable.
+<details open><summary>Groovy</summary>
+
+```groovy
+poEditor {
+    apiToken = "your_api_token"
+    projectId = 12345
+    defaultLang = "en"
+    untranslatableStringsRegex = "(.*)"
+}
+```
+
+</details>
+
+<details><summary>Kotlin</summary>
+
+```kotlin
+poEditor {
+    apiToken = "your_api_token"
+    projectId = 12345
+    defaultLang = "en"
+    untranslatableStringsRegex = "(.*)"
+}
+```
+
+</details>
+
+## [4.1.2] - 2023-12-11
+### Fixed
+- Fix default resource file name constant value.
+
+## [4.1.1] - 2023-12-11
+### Fixed
+- Restore conventions for uninitialized properties.
+- Fix flavor-specific configs not picking up the default resource path for the brand.
+
+## [4.1.0] - 2023-11-26
+### Changed
+- Allow PoEditor importing task lazy configuration.
+
+## [4.0.0] - 2023-11-07
+### Changed
+- BREAKING CHANGE: Bump Gradle version to 8 and AGP version to 8.1.2.
+- Update dependencies.
+
+## [3.4.2] - 2023-08-28
+### Fixed
+- Fix tags not being sent as String JSON array. _Thanks to [@bogdanzurac](https://github.com/bogdanzurac) for the contribution!_
+
+## [3.4.1] - 2023-07-13
+### Fixed
+- Fix parsing of texts with more than 9 placeholders.
+
 ## [3.4.0] - 2023-05-08
 ### Added
 - Add new `unescapeHtmlTags` flag to enable or disable HTML unescaping from strings.
@@ -470,7 +525,14 @@ res_dir_path -> resDirPath
 ### Added
 - Initial release.
 
-[Unreleased]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/3.4.0...HEAD
+[Unreleased]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/4.2.0...HEAD
+[4.2.0]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/4.1.2...4.2.0
+[4.1.2]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/4.1.1...4.1.2
+[4.1.1]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/4.1.0...4.1.1
+[4.1.0]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/4.0.0...4.1.0
+[4.0.0]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/3.4.2...4.0.0
+[3.4.2]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/3.4.1...3.4.2
+[3.4.1]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/3.4.0...3.4.1
 [3.4.0]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/3.3.0...3.4.0
 [3.3.1]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/3.3.0...3.3.1
 [3.3.0]: https://github.com/hyperdevs-team/poeditor-android-gradle-plugin/compare/3.2.0...3.3.0

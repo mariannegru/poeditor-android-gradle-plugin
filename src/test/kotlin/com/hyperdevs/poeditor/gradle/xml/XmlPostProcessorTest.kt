@@ -88,6 +88,13 @@ class XmlPostProcessorTest {
             xmlPostProcessor.formatTranslationString("Hello {{name}}. How are you {{name}}?"))
         Assert.assertEquals("Hello %1\$s. This is your score: %2\$s",
             xmlPostProcessor.formatTranslationString("Hello {1{name}}. This is your score: {2{score}}"))
+
+        Assert.assertEquals("Hello %1\$s %2\$s %3\$s %4\$s %5\$s %6\$s %7\$s %8\$s %9\$s %10\$s %11\$s",
+            xmlPostProcessor.formatTranslationString(
+                "Hello {1{name}} {2{name}} {3{name}} {4{name}} {5{name}} " +
+                "{6{name}} {7{name}} {8{name}} {9{name}} {10{name}} {11{name}}"
+            )
+        )
     }
 
     @Test
@@ -127,7 +134,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -161,7 +168,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -185,7 +192,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -209,7 +216,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -245,7 +252,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -285,7 +292,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -307,7 +314,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -329,7 +336,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(false)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -351,7 +358,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(false)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, false))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, false, null))
     }
 
     @Test
@@ -373,7 +380,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(false)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, false))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, false, null))
     }
 
     @Test
@@ -395,7 +402,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -423,7 +430,7 @@ class XmlPostProcessorTest {
                             </resources>
                              """.trimIndent().formatXml(true)
 
-        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true))
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, null))
     }
 
     @Test
@@ -496,6 +503,34 @@ class XmlPostProcessorTest {
         Assert.assertEquals(
             expectedKey,
             xp.evaluate(xpNamePath, splitTranslationXmlMap.getValue(tabletRegexString)).trim())
+    }
+
+    @Test
+    fun `Postprocessing with untranslated pattern works`() {
+        // Test complete Xml
+        val inputXmlString = """
+                            <resources>
+                              <string name="untranslatable_string">
+                                "1234"
+                              </string>
+                              <string name="translatable_string">
+                                "¡Hola!"
+                              </string>
+                            </resources>
+                             """.trimIndent()
+
+        val expectedResult = """
+                            <resources>
+                              <string name="untranslatable_string" translatable="false">
+                                "1234"
+                              </string>
+                              <string name="translatable_string">
+                                "¡Hola!"
+                              </string>
+                            </resources>
+                             """.trimIndent().formatXml(true)
+
+        Assert.assertEquals(expectedResult, xmlPostProcessor.formatTranslationXml(inputXmlString, true, """^untranslatable(.+)$"""))
     }
 
     private fun String.formatXml(unescapeHtmlTags: Boolean): String =

@@ -8,7 +8,8 @@ This plug-in super-charges your Android project by providing tasks to download y
 It also provides a built-in syntax to handle placeholders to enhance the already awesome Android support from PoEditor.
 
 ## Minimum requirements
-* Android Gradle Plug-in 7.0 or above
+* Gradle 8.2 or above
+* Android Gradle Plug-in 8.0 or above
 
 ## Setting Up
 In your main `build.gradle`, add [jitpack.io](https://jitpack.io/) repository in the `buildscript` block and include the plug-in as a dependency:
@@ -28,16 +29,45 @@ buildscript {
 
 </details>
 
-<details><summary>Kotlin</summary>
+<details><summary>Kotlin (using classpath)</summary>
 
 ```kotlin
 buildscript {
     repositories { 
-        maven("https://jitpack.io")
+        maven { url = java.net.URI("https://jitpack.io") }
     }
     dependencies {
         classpath("com.github.hyperdevs-team:poeditor-android-gradle-plugin:<latest_version>")
     }
+}
+```
+
+</details>
+
+<details><summary>Kotlin (using the plugins block)</summary>
+
+Top-level `settings.gradle.kts`
+```kotlin
+pluginManagement {
+    repositories {
+        maven { url = java.net.URI("https://jitpack.io") }
+    }
+    resolutionStrategy {
+        eachPlugin {
+            // Add custom plugin ID for the PoEditor plugin.
+            // This is required because the plugin is not published in the Gradle plugin portal.
+            if (requested.id.id == "com.hyperdevs.poeditor") {
+                useModule("com.github.hyperdevs-team:poeditor-android-gradle-plugin:${requested.version}")
+            }
+        }
+    }
+}
+```
+
+Top-level `build.gradle.kts`
+```kotlin
+plugins {
+    id("com.hyperdevs.poeditor") version "<latest_version>" apply false
 }
 ```
 
@@ -64,14 +94,14 @@ poEditor {
 
 ```kotlin
 plugins {
-    id "com.android.application"
-    id "com.hyperdevs.poeditor"
+    id("com.android.application")
+    id("com.hyperdevs.poeditor")
 }
 
 poEditor {
-    apiToken = "your_api_token"
-    projectId = 12345
-    defaultLang = "en"
+    apiToken.set("your_api_token")
+    projectId.set(12345)
+    defaultLang.set("en")
 }
 ```
 
@@ -94,6 +124,7 @@ Attribute                              | Description
 ```order```                            | (Since 3.1.0) (Optional) Defines how to order the export. Accepted values are defined by the POEditor API.
 ```unquoted```                         | (Since 3.2.0) (Optional) Defines if the strings should be unquoted, overriding default PoEditor configuration. Defaults to `false`.
 ```unescapeHtmlTags```                 | (Since 3.4.0) (Optional) Whether or not to unescape HTML entitites from strings. Defaults to true.
+```untranslatableStringsRegex```       | (Since 4.2.0) (Optional) Pattern to use to mark strings as translatable=false in the strings file. Defaults to null.
 
 After the configuration is done, just run the new ```importPoEditorStrings``` task via Android Studio or command line:
 
@@ -550,6 +581,63 @@ poEditor {
 
 </details>
 
+## Creating extra PoEditor tasks
+> Requires version 4.1.0 of the plug-in
+
+You can create extra PoEditor tasks to import strings for other projects, for example. You can do so by adding this to
+your `build.gradle(.kts)` file:
+
+<details open><summary>Kotlin</summary>
+
+```kotlin
+tasks.register("importCustomPoEditorStrings", ImportPoEditorStringsTask::class.java) {
+    description = "Imports custom strings from POEditor."
+    group = "strings"
+
+    apiToken = "another_token_from_a_different_project"
+    projectId = 12345
+    resFileName = "strings_custom"
+}
+```
+
+</details>
+
+## Mark strings as untranslatable
+> Requires version 4.2.0 of the plug-in
+
+You can use the `untranslatableStringsRegex` property to define a regex to mark matching PoEditor string keys as 
+untranslatable.
+These strings will be marked as `translatable="false"` in the final strings file.
+
+<details open><summary>Groovy</summary>
+
+```groovy
+poEditor {
+    apiToken = "your_api_token"
+    projectId = 12345
+    defaultLang = "en"
+    untranslatableStringsRegex = "(.*)"
+}
+```
+
+</details>
+
+<details><summary>Kotlin</summary>
+
+```kotlin
+poEditor {
+    apiToken = "your_api_token"
+    projectId = 12345
+    defaultLang = "en"
+    untranslatableStringsRegex = "(.*)"
+}
+```
+
+</details>
+
+Keep in mind that the regex must match the whole string name and not just a part, as it relies on 
+[`CharSequence.matches(Regex)`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/matches.html) from the 
+Kotlin API.
 
 ## iOS alternative
 If you want a similar solution for your iOS projects, check this out: [poeditor-parser-swift](https://github.com/hyperdevs-team/poeditor-parser-swift)

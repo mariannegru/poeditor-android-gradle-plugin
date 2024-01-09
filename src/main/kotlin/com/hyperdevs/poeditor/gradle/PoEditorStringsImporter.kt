@@ -18,6 +18,7 @@
 
 package com.hyperdevs.poeditor.gradle
 
+import com.hyperdevs.poeditor.gradle.adapters.PoEditorDateJsonAdapter
 import com.hyperdevs.poeditor.gradle.ktx.downloadUrlToString
 import com.hyperdevs.poeditor.gradle.network.PoEditorApiControllerImpl
 import com.hyperdevs.poeditor.gradle.network.api.ExportType
@@ -30,7 +31,6 @@ import com.hyperdevs.poeditor.gradle.utils.logger
 import com.hyperdevs.poeditor.gradle.xml.AndroidXmlWriter
 import com.hyperdevs.poeditor.gradle.xml.XmlPostProcessor
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PoEditorDateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -94,7 +94,8 @@ object PoEditorStringsImporter {
                               minimumTranslationPercentage: Int,
                               resFileName: String,
                               unquoted: Boolean,
-                              unescapeHtmlTags: Boolean) {
+                              unescapeHtmlTags: Boolean,
+                              untranslatableStringsRegex: String?) {
         try {
             val poEditorApiController = PoEditorApiControllerImpl(apiToken, moshi, poEditorApi)
 
@@ -145,7 +146,8 @@ object PoEditorStringsImporter {
                 val postProcessedXmlDocumentMap = xmlPostProcessor.postProcessTranslationXml(
                     translationFile,
                     listOf(TABLET_REGEX_STRING),
-                    unescapeHtmlTags
+                    unescapeHtmlTags,
+                    untranslatableStringsRegex
                 )
 
                 xmlWriter.saveXml(
