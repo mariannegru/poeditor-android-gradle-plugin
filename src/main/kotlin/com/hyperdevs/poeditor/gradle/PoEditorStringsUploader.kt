@@ -108,7 +108,7 @@ object PoEditorStringsUploader {
 
             val mainValuesFile = File(baseValuesDir, "$resFileName.xml")
             if (mainValuesFile.exists()) {
-                syncTerms(mainValuesFile, projectId, poEditorApiController)
+                syncTerms(mainValuesFile, projectId, poEditorApiController, tags)
 
                 // Retrieve translation file URL for the given language and for the "android_strings" type,
                 // acknowledging passed tags if present
@@ -133,7 +133,7 @@ object PoEditorStringsUploader {
         }
     }
 
-    private fun syncTerms(mainValuesFile: File, projectId: Int, poEditorApiController: PoEditorApiControllerImpl) {
+    private fun syncTerms(mainValuesFile: File, projectId: Int, poEditorApiController: PoEditorApiControllerImpl, tags: List<String>) {
         val document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
             .parse(FileInputStream(mainValuesFile))
 
