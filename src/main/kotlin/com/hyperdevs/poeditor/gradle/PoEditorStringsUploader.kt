@@ -51,9 +51,9 @@ object PoEditorStringsUploader {
         .add(Date::class.java, PoEditorDateJsonAdapter())
         .build()
 
-    private const val CONNECT_TIMEOUT_SECONDS = 30L
+    private const val CONNECT_TIMEOUT_SECONDS = 60L
     private const val READ_TIMEOUT_SECONDS = 30L
-    private const val WRITE_TIMEOUT_SECONDS = 30L
+    private const val WRITE_TIMEOUT_SECONDS = 60L
 
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
